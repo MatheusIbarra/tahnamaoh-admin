@@ -18,7 +18,10 @@ interface CoreRequestInput {
 function resolveCoreApiBaseUrl(): string {
   const baseUrl = process.env.CORE_API_BASE_URL?.trim();
   if (!baseUrl) {
-    throw new Error("Missing required env CORE_API_BASE_URL");
+    throw new CoreApiError(
+      "CORE_API_BASE_URL não está definida. No .env do admin, use a URL base da API (ex.: http://localhost:3001/api/v1).",
+      500,
+    );
   }
   return baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
 }
@@ -58,6 +61,24 @@ function normalizeErrorMessage(status: number, details: unknown): string {
   return "Core API request failed";
 }
 
+function summarizeFetchFailure(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return "falha de rede desconhecida";
+  }
+  const parts = [error.message];
+  const cause = error.cause;
+  if (cause instanceof Error && cause.message) {
+    parts.push(cause.message);
+  } else if (typeof cause === "string" && cause.trim()) {
+    parts.push(cause.trim());
+  }
+  const code = "code" in error ? String((error as NodeJS.ErrnoException).code ?? "") : "";
+  if (code) {
+    parts.push(`(${code})`);
+  }
+  return parts.join(" ");
+}
+
 async function fetchCoreResponse(
   input: CoreRequestInput,
   accessToken: string,
@@ -73,12 +94,25 @@ async function fetchCoreResponse(
     headers.set("content-type", "application/json");
   }
 
-  const response = await fetch(buildUrl(input.path, input.query), {
-    method,
-    headers,
-    body: hasBody ? JSON.stringify(input.body) : undefined,
-    cache: input.cache ?? "no-store",
-  });
+  const url = buildUrl(input.path, input.query);
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method,
+      headers,
+      body: hasBody ? JSON.stringify(input.body) : undefined,
+      cache: input.cache ?? "no-store",
+    });
+  } catch (error) {
+    if (error instanceof CoreApiError) {
+      throw error;
+    }
+    throw new CoreApiError(
+      `Não foi possível contatar a API Core (${summarizeFetchFailure(error)}). Confira CORE_API_BASE_URL e se o tahnamao-core está em execução na porta esperada.`,
+      503,
+      error,
+    );
+  }
 
   if (response.status === 204) {
     return { response, payload: undefined };
@@ -86,10 +120,18 @@ async function fetchCoreResponse(
 
   const contentType = response.headers.get("content-type") ?? "";
   let payload: unknown;
-  if (contentType.includes("application/json")) {
-    payload = await response.json();
-  } else {
-    payload = await response.text();
+  try {
+    if (contentType.includes("application/json")) {
+      payload = await response.json();
+    } else {
+      payload = await response.text();
+    }
+  } catch (error) {
+    throw new CoreApiError(
+      "A API Core retornou um corpo de resposta inválido (não foi possível interpretar JSON ou texto).",
+      response.status >= 400 ? response.status : 502,
+      error,
+    );
   }
 
   return { response, payload };
@@ -100,15 +142,27 @@ async function refreshAdminSessionWithCore(session: AdminSession): Promise<boole
     return false;
   }
 
-  const response = await fetch(`${resolveCoreApiBaseUrl()}/admin/auth/refresh`, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify({ refreshToken: session.refreshToken }),
-    cache: "no-store",
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${resolveCoreApiBaseUrl()}/admin/auth/refresh`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ refreshToken: session.refreshToken }),
+      cache: "no-store",
+    });
+  } catch (error) {
+    if (error instanceof CoreApiError) {
+      throw error;
+    }
+    throw new CoreApiError(
+      `Sessão expirada e não foi possível renovar com a API Core (${summarizeFetchFailure(error)}).`,
+      503,
+      error,
+    );
+  }
 
   const body = (await response.json().catch(() => ({}))) as {
     accessToken?: string;

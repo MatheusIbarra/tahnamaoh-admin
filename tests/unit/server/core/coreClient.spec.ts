@@ -145,6 +145,49 @@ describe("requestCore", () => {
     expect(refreshBody).toEqual({ refreshToken: "refresh-1" });
   });
 
+  it("wraps fetch network failures in CoreApiError with a clear message", async () => {
+    getAdminSessionMock.mockResolvedValue({
+      accessToken: "admin-access-token",
+      email: "admin@tahnamao.local",
+      createdAt: new Date().toISOString(),
+    });
+
+    vi.mocked(fetch).mockRejectedValueOnce(new TypeError("fetch failed"));
+
+    await expect(
+      requestCore({
+        path: "/admin/drivers",
+      }),
+    ).rejects.toEqual(
+      expect.objectContaining<Partial<CoreApiError>>({
+        name: "CoreApiError",
+        status: 503,
+        message: expect.stringContaining("Não foi possível contatar a API Core"),
+      }),
+    );
+  });
+
+  it("throws CoreApiError when CORE_API_BASE_URL is missing", async () => {
+    delete process.env.CORE_API_BASE_URL;
+    getAdminSessionMock.mockResolvedValue({
+      accessToken: "admin-access-token",
+      email: "admin@tahnamao.local",
+      createdAt: new Date().toISOString(),
+    });
+
+    await expect(
+      requestCore({
+        path: "/admin/drivers",
+      }),
+    ).rejects.toEqual(
+      expect.objectContaining<Partial<CoreApiError>>({
+        name: "CoreApiError",
+        status: 500,
+        message: expect.stringContaining("CORE_API_BASE_URL"),
+      }),
+    );
+  });
+
   it("returns undefined for 204 responses", async () => {
     getAdminSessionMock.mockResolvedValue({
       accessToken: "admin-access-token",

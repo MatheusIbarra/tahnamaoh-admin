@@ -23,13 +23,13 @@ Mapear cada funcionalidade administrativa para o contrato HTTP consumido do `tah
 - Fonte no admin: `accessToken` e `refreshToken` retornados por `POST /admin/auth/login`, persistidos em sessão httpOnly.
 - Renovação: em `401` do core, o `coreClient` chama `POST /admin/auth/refresh` com o `refreshToken` da sessão, atualiza o cookie e repete a requisição uma vez.
 
-## Customers (pendente de reconciliacao)
+## Customers
 
-- Acoes implementadas no admin por paths configuraveis em ambiente:
-  - `CORE_ADMIN_CUSTOMERS_LIST_PATH`
-  - `CORE_ADMIN_CUSTOMERS_BLOCK_PATH_TEMPLATE`
-  - `CORE_ADMIN_CUSTOMERS_UNBLOCK_PATH_TEMPLATE`
-- Enquanto os paths nao forem configurados, o painel retorna erro `501` orientando sincronizacao de contrato.
+| Feature do painel | Metodo | Path core | Status esperado | Observacao |
+|---|---|---|---|---|
+| Listar clientes | GET | `/admin/clients` | 200 | Query `name`, `email`, `page`, `limit` |
+| Bloquear cliente | POST | `CORE_ADMIN_CUSTOMERS_BLOCK_PATH_TEMPLATE` | 200 | Path ainda configuravel por env |
+| Desbloquear cliente | POST | `CORE_ADMIN_CUSTOMERS_UNBLOCK_PATH_TEMPLATE` | 200 | Path ainda configuravel por env |
 
 ## Orders (pendente de reconciliacao)
 

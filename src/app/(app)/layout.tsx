@@ -9,7 +9,7 @@ import { requireAdminSession } from "@/server/actions/auth/routeAccess";
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/drivers", label: "Motoristas" },
-  { href: "/customers", label: "Clientes" },
+  { href: "/clients", label: "Clientes" },
   { href: "/orders", label: "Pedidos" },
 ];
 
