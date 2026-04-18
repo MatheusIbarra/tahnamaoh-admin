@@ -9,7 +9,13 @@ interface LoginPageProps {
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
-  const hasError = params.error === "invalid_credentials";
+  const errorMessageByCode: Record<string, string> = {
+    invalid_credentials: "Credenciais inválidas.",
+    core_unavailable: "Não foi possível autenticar no core agora. Tente novamente em instantes.",
+    session_invalid: "Sessão inválida recebida do core. Tente novamente.",
+    unexpected: "Erro inesperado ao autenticar.",
+  };
+  const errorMessage = params.error ? errorMessageByCode[params.error] : undefined;
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-linear-to-b from-background to-muted/30 px-6 py-10">
@@ -24,9 +30,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </div>
         </div>
 
-        {hasError ? (
+        {errorMessage ? (
           <p className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            Credenciais inválidas.
+            {errorMessage}
           </p>
         ) : null}
 
@@ -63,9 +69,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          Login administrativo definitivo sera integrado ao core quando o endpoint oficial estiver disponivel.
-        </p>
+        <p className="mt-6 text-center text-xs text-muted-foreground">Autenticação dedicada via core.</p>
 
         <div className="mt-4 text-center">
           <Link href="/" className="text-xs text-secondary hover:underline">

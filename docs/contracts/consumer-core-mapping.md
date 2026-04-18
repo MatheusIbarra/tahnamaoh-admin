@@ -10,17 +10,17 @@ Mapear cada funcionalidade administrativa para o contrato HTTP consumido do `tah
 |---|---|---|---|---|
 | Listar pendentes | GET | `/admin/drivers/pending` | 200 | Query `page`, `pageSize` |
 | Detalhe motorista | GET | `/admin/drivers/{driverId}` | 200 | Snapshot de revisao |
-| Aprovar motorista | POST | `/admin/drivers/{driverId}/approve` | 200 | `reason` recomendado |
+| Aprovar motorista | POST (fallback PATCH) | `/admin/drivers/{driverId}/approve` | 200 | `reason` obrigatorio no dominio (`approval reason is required`) |
 | Rejeitar motorista | POST | `/admin/drivers/{driverId}/reject` | 200 | `reason` obrigatorio no dominio |
-| Bloquear motorista | POST | `/admin/drivers/{driverId}/block` | 200 | `reason` obrigatorio no dominio |
-| Desbloquear motorista | POST | `/admin/drivers/{driverId}/unblock` | 200 | Pode incluir `reason` |
+| Bloquear motorista | POST (fallback PATCH) | `/admin/drivers/{driverId}/block` | 200 | `reason` obrigatorio no dominio (`block reason is required`) |
+| Desbloquear motorista | POST (fallback PATCH) | `/admin/drivers/{driverId}/unblock` | 200 | Visivel quando motorista bloqueado |
 | Aprovar documento | POST | `/admin/drivers/{driverId}/documents/{documentId}/approve` | 200 | |
 | Rejeitar documento | POST | `/admin/drivers/{driverId}/documents/{documentId}/reject` | 200 | `reason` recomendada |
 
 ## Header administrativo
 
-- Header requerido: `x-admin-id`
-- Fonte no admin: sessao httpOnly (fallback local em ambiente de desenvolvimento)
+- Header requerido: `Authorization: Bearer <admin-token>`
+- Fonte no admin: token retornado por `POST /admin/auth/login` e persistido em sessão httpOnly.
 
 ## Customers (pendente de reconciliacao)
 
@@ -39,7 +39,8 @@ Mapear cada funcionalidade administrativa para o contrato HTTP consumido do `tah
 - Stream SSE disponivel em `GET /api/orders/stream` no admin, repassando para o path configurado no core.
 - Enquanto os paths nao forem configurados, o painel retorna erro `501` orientando sincronizacao de contrato.
 
-## Auth Admin (pendente de reconciliacao)
+## Auth Admin
 
-- Fluxo de login de painel preparado localmente.
-- Integracao real depende de endpoint oficial do core para autenticacao administrativa.
+| Feature do painel | Metodo | Path core | Status esperado | Observacao |
+|---|---|---|---|---|
+| Login admin | POST | `/admin/auth/login` | 200 | Sessão grava `accessToken` admin para uso em rotas `/admin/*` |

@@ -24,14 +24,13 @@ describe("requestCore", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     process.env.CORE_API_BASE_URL = "http://localhost:3001/api/v1";
-    process.env.ADMIN_DEFAULT_ID = "admin-env";
     getAdminSessionMock.mockResolvedValue(null);
     vi.stubGlobal("fetch", vi.fn());
   });
 
-  it("builds URL with query and sends x-admin-id from session", async () => {
+  it("builds URL with query and sends bearer token from session", async () => {
     getAdminSessionMock.mockResolvedValue({
-      adminId: "admin-session",
+      accessToken: "admin-access-token",
       email: "admin@tahnamao.local",
       createdAt: new Date().toISOString(),
     });
@@ -52,27 +51,34 @@ describe("requestCore", () => {
     expect(url).toBe("http://localhost:3001/api/v1/admin/drivers/pending?page=2&pageSize=15");
 
     const headers = new Headers(options.headers);
-    expect(headers.get("x-admin-id")).toBe("admin-session");
+    expect(headers.get("authorization")).toBe("Bearer admin-access-token");
     expect(headers.get("accept")).toBe("application/json");
     expect(result).toEqual({ status: "ok" });
   });
 
-  it("falls back to ADMIN_DEFAULT_ID when session is absent", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(200, { ok: true }));
-
-    await requestCore<{ ok: boolean }>({
-      path: "/health/live",
-    });
-
-    const [, options] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit];
-    const headers = new Headers(options.headers);
-    expect(headers.get("x-admin-id")).toBe("admin-env");
+  it("throws when session access token is missing", async () => {
+    await expect(
+      requestCore<{ ok: boolean }>({
+        path: "/health/live",
+      }),
+    ).rejects.toEqual(
+      expect.objectContaining<Partial<CoreApiError>>({
+        status: 401,
+        message: "Admin session is missing access token",
+      }),
+    );
   });
 
   it("throws CoreApiError with API message when response is not ok", async () => {
+    getAdminSessionMock.mockResolvedValue({
+      accessToken: "admin-access-token",
+      email: "admin@tahnamao.local",
+      createdAt: new Date().toISOString(),
+    });
+
     vi.mocked(fetch).mockResolvedValueOnce(
       jsonResponse(403, {
-        message: "x-admin-id header is required",
+        message: "admin role is required to access admin routes",
       }),
     );
 
@@ -84,12 +90,18 @@ describe("requestCore", () => {
       expect.objectContaining<Partial<CoreApiError>>({
         name: "CoreApiError",
         status: 403,
-        message: "x-admin-id header is required",
+        message: "admin role is required to access admin routes",
       }),
     );
   });
 
   it("returns undefined for 204 responses", async () => {
+    getAdminSessionMock.mockResolvedValue({
+      accessToken: "admin-access-token",
+      email: "admin@tahnamao.local",
+      createdAt: new Date().toISOString(),
+    });
+
     vi.mocked(fetch).mockResolvedValueOnce(
       new Response(null, {
         status: 204,

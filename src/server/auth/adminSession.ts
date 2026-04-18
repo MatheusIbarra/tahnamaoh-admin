@@ -7,13 +7,13 @@ const SESSION_COOKIE_NAME = "tahnamao_admin_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 8;
 
 export interface AdminSession {
-  adminId: string;
+  accessToken: string;
   email: string;
   createdAt: string;
 }
 
 interface AdminSessionClaims extends JWTPayload {
-  adminId: string;
+  accessToken: string;
   email: string;
   createdAt: string;
 }
@@ -28,7 +28,7 @@ function resolveSessionSecret(): Uint8Array {
 
 async function signSession(session: AdminSession): Promise<string> {
   const claims: AdminSessionClaims = {
-    adminId: session.adminId,
+    accessToken: session.accessToken,
     email: session.email,
     createdAt: session.createdAt,
   };
@@ -44,7 +44,7 @@ async function verifySession(token: string): Promise<AdminSession | null> {
   try {
     const { payload } = await jwtVerify<AdminSessionClaims>(token, resolveSessionSecret());
     if (
-      typeof payload.adminId !== "string" ||
+      typeof payload.accessToken !== "string" ||
       typeof payload.email !== "string" ||
       typeof payload.createdAt !== "string"
     ) {
@@ -52,7 +52,7 @@ async function verifySession(token: string): Promise<AdminSession | null> {
     }
 
     return {
-      adminId: payload.adminId,
+      accessToken: payload.accessToken,
       email: payload.email,
       createdAt: payload.createdAt,
     };

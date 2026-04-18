@@ -1,21 +1,44 @@
 "use server";
 
+import { decodeJwt } from "jose";
 import { redirect } from "next/navigation";
 
 import { setAdminSession } from "@/server/auth/adminSession";
+import { CoreApiError } from "@/server/core/coreErrors";
 
-function resolveCredentials() {
-  const email = process.env.ADMIN_DEV_EMAIL?.trim();
-  const password = process.env.ADMIN_DEV_PASSWORD?.trim();
-  const adminId = process.env.ADMIN_DEFAULT_ID?.trim();
+function resolveCoreApiBaseUrl(): string {
+  const baseUrl = process.env.CORE_API_BASE_URL?.trim();
+  if (!baseUrl) {
+    throw new Error("Missing required env CORE_API_BASE_URL");
+  }
+  return baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+}
 
-  if (!email || !password || !adminId) {
-    throw new Error(
-      "Missing required envs ADMIN_DEV_EMAIL, ADMIN_DEV_PASSWORD and ADMIN_DEFAULT_ID for admin login placeholder.",
+async function loginInCore(email: string, password: string): Promise<{ accessToken: string }> {
+  const response = await fetch(`${resolveCoreApiBaseUrl()}/admin/auth/login`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({ email, password }),
+    cache: "no-store",
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as {
+    message?: string;
+    accessToken?: string;
+  };
+
+  if (!response.ok || !payload.accessToken) {
+    throw new CoreApiError(
+      payload.message ?? "Unable to login on core admin auth endpoint",
+      response.status || 500,
+      payload,
     );
   }
 
-  return { email: email.toLowerCase(), password, adminId };
+  return { accessToken: payload.accessToken };
 }
 
 export async function loginAction(formData: FormData): Promise<void> {
@@ -24,17 +47,32 @@ export async function loginAction(formData: FormData): Promise<void> {
     .toLowerCase();
   const password = String(formData.get("password") ?? "").trim();
 
-  const expected = resolveCredentials();
-
-  if (email !== expected.email || password !== expected.password) {
+  if (!email || !password) {
     redirect("/login?error=invalid_credentials");
   }
 
-  await setAdminSession({
-    adminId: expected.adminId,
-    email,
-    createdAt: new Date().toISOString(),
-  });
+  try {
+    const { accessToken } = await loginInCore(email, password);
+    const jwtPayload = decodeJwt(accessToken) as { sub?: string };
+
+    await setAdminSession({
+      accessToken,
+      email,
+      createdAt: new Date().toISOString(),
+    });
+
+    if (!jwtPayload.sub) {
+      redirect("/login?error=session_invalid");
+    }
+  } catch (error) {
+    if (error instanceof CoreApiError) {
+      if (error.status === 401 || error.status === 403) {
+        redirect("/login?error=invalid_credentials");
+      }
+      redirect("/login?error=core_unavailable");
+    }
+    redirect("/login?error=unexpected");
+  }
 
   redirect("/dashboard");
 }

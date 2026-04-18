@@ -30,7 +30,7 @@ export async function GET(): Promise<Response> {
   const upstream = await fetch(upstreamUrl, {
     headers: {
       Accept: "text/event-stream",
-      "x-admin-id": session.adminId,
+      Authorization: `Bearer ${session.accessToken}`,
     },
     cache: "no-store",
   });

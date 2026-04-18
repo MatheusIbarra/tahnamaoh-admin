@@ -11,7 +11,7 @@ interface CoreRequestInput {
   method?: HttpMethod;
   query?: Record<string, string | number | boolean | undefined>;
   body?: unknown;
-  adminId?: string;
+  accessToken?: string;
   cache?: RequestCache;
 }
 
@@ -39,17 +39,13 @@ function buildUrl(path: string, query?: CoreRequestInput["query"]): string {
   return url.toString();
 }
 
-async function resolveAdminId(explicitAdminId?: string): Promise<string | undefined> {
-  if (explicitAdminId) {
-    return explicitAdminId;
+async function resolveAccessToken(explicitAccessToken?: string): Promise<string | undefined> {
+  if (explicitAccessToken) {
+    return explicitAccessToken;
   }
 
   const session = await getAdminSession();
-  if (session?.adminId) {
-    return session.adminId;
-  }
-
-  return process.env.ADMIN_DEFAULT_ID?.trim();
+  return session?.accessToken;
 }
 
 function normalizeErrorMessage(status: number, details: unknown): string {
@@ -72,14 +68,15 @@ function normalizeErrorMessage(status: number, details: unknown): string {
 }
 
 export async function requestCore<T>(input: CoreRequestInput): Promise<T> {
-  const adminId = await resolveAdminId(input.adminId);
+  const accessToken = await resolveAccessToken(input.accessToken);
   const headers = new Headers({
     Accept: "application/json",
   });
 
-  if (adminId) {
-    headers.set("x-admin-id", adminId);
+  if (!accessToken) {
+    throw new CoreApiError("Admin session is missing access token", 401);
   }
+  headers.set("authorization", `Bearer ${accessToken}`);
 
   const method = input.method ?? "GET";
   const hasBody = input.body !== undefined;
