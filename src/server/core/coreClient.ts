@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getAdminSession } from "@/server/auth/adminSession";
+import { clearAdminSession, getAdminSession, setAdminSession, type AdminSession } from "@/server/auth/adminSession";
 
 import { CoreApiError } from "./coreErrors";
 
@@ -39,15 +39,6 @@ function buildUrl(path: string, query?: CoreRequestInput["query"]): string {
   return url.toString();
 }
 
-async function resolveAccessToken(explicitAccessToken?: string): Promise<string | undefined> {
-  if (explicitAccessToken) {
-    return explicitAccessToken;
-  }
-
-  const session = await getAdminSession();
-  return session?.accessToken;
-}
-
 function normalizeErrorMessage(status: number, details: unknown): string {
   if (typeof details === "object" && details && "message" in details) {
     const message = (details as { message?: unknown }).message;
@@ -67,15 +58,13 @@ function normalizeErrorMessage(status: number, details: unknown): string {
   return "Core API request failed";
 }
 
-export async function requestCore<T>(input: CoreRequestInput): Promise<T> {
-  const accessToken = await resolveAccessToken(input.accessToken);
+async function fetchCoreResponse(
+  input: CoreRequestInput,
+  accessToken: string,
+): Promise<{ response: Response; payload: unknown }> {
   const headers = new Headers({
     Accept: "application/json",
   });
-
-  if (!accessToken) {
-    throw new CoreApiError("Admin session is missing access token", 401);
-  }
   headers.set("authorization", `Bearer ${accessToken}`);
 
   const method = input.method ?? "GET";
@@ -92,15 +81,85 @@ export async function requestCore<T>(input: CoreRequestInput): Promise<T> {
   });
 
   if (response.status === 204) {
-    return undefined as T;
+    return { response, payload: undefined };
   }
 
-  let payload: unknown;
   const contentType = response.headers.get("content-type") ?? "";
+  let payload: unknown;
   if (contentType.includes("application/json")) {
     payload = await response.json();
   } else {
     payload = await response.text();
+  }
+
+  return { response, payload };
+}
+
+async function refreshAdminSessionWithCore(session: AdminSession): Promise<boolean> {
+  if (!session.refreshToken) {
+    return false;
+  }
+
+  const response = await fetch(`${resolveCoreApiBaseUrl()}/admin/auth/refresh`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({ refreshToken: session.refreshToken }),
+    cache: "no-store",
+  });
+
+  const body = (await response.json().catch(() => ({}))) as {
+    accessToken?: string;
+    refreshToken?: string;
+  };
+
+  if (!response.ok || !body.accessToken || !body.refreshToken) {
+    await clearAdminSession();
+    return false;
+  }
+
+  await setAdminSession({
+    accessToken: body.accessToken,
+    refreshToken: body.refreshToken,
+    email: session.email,
+    createdAt: session.createdAt,
+  });
+
+  return true;
+}
+
+export async function requestCore<T>(input: CoreRequestInput): Promise<T> {
+  const usesSessionToken = !input.accessToken;
+  let session = usesSessionToken ? await getAdminSession() : null;
+
+  let accessToken = input.accessToken ?? session?.accessToken;
+
+  if (!accessToken) {
+    throw new CoreApiError("Admin session is missing access token", 401);
+  }
+
+  let { response, payload } = await fetchCoreResponse(input, accessToken);
+
+  if (
+    !response.ok &&
+    response.status === 401 &&
+    usesSessionToken &&
+    session?.refreshToken
+  ) {
+    const refreshed = await refreshAdminSessionWithCore(session);
+    if (refreshed) {
+      session = await getAdminSession();
+      accessToken = session?.accessToken;
+      if (accessToken) {
+        ({ response, payload } = await fetchCoreResponse(input, accessToken));
+      }
+    }
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
   }
 
   if (!response.ok) {

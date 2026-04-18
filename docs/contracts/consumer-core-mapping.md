@@ -20,7 +20,8 @@ Mapear cada funcionalidade administrativa para o contrato HTTP consumido do `tah
 ## Header administrativo
 
 - Header requerido: `Authorization: Bearer <admin-token>`
-- Fonte no admin: token retornado por `POST /admin/auth/login` e persistido em sessão httpOnly.
+- Fonte no admin: `accessToken` e `refreshToken` retornados por `POST /admin/auth/login`, persistidos em sessão httpOnly.
+- Renovação: em `401` do core, o `coreClient` chama `POST /admin/auth/refresh` com o `refreshToken` da sessão, atualiza o cookie e repete a requisição uma vez.
 
 ## Customers (pendente de reconciliacao)
 
@@ -43,4 +44,5 @@ Mapear cada funcionalidade administrativa para o contrato HTTP consumido do `tah
 
 | Feature do painel | Metodo | Path core | Status esperado | Observacao |
 |---|---|---|---|---|
-| Login admin | POST | `/admin/auth/login` | 200 | Sessão grava `accessToken` admin para uso em rotas `/admin/*` |
+| Login admin | POST | `/admin/auth/login` | 200 | Sessão grava `accessToken` + `refreshToken` |
+| Refresh admin | POST | `/admin/auth/refresh` | 200 | Usado automaticamente pelo `coreClient` após `401` |

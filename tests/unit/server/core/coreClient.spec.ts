@@ -6,6 +6,8 @@ const { getAdminSessionMock } = vi.hoisted(() => ({
 
 vi.mock("@/server/auth/adminSession", () => ({
   getAdminSession: getAdminSessionMock,
+  setAdminSession: vi.fn(),
+  clearAdminSession: vi.fn(),
 }));
 
 import { CoreApiError } from "@/server/core/coreErrors";
@@ -93,6 +95,54 @@ describe("requestCore", () => {
         message: "admin role is required to access admin routes",
       }),
     );
+  });
+
+  it("refreshes admin session once on 401 then retries the original request", async () => {
+    getAdminSessionMock
+      .mockResolvedValueOnce({
+        accessToken: "expired-access",
+        refreshToken: "refresh-1",
+        email: "admin@tahnamao.local",
+        createdAt: "2026-01-01T00:00:00.000Z",
+      })
+      .mockResolvedValueOnce({
+        accessToken: "new-access",
+        refreshToken: "refresh-2",
+        email: "admin@tahnamao.local",
+        createdAt: "2026-01-01T00:00:00.000Z",
+      });
+
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        jsonResponse(401, {
+          message: "invalid access token",
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse(200, {
+          accessToken: "new-access",
+          refreshToken: "refresh-2",
+          tokenType: "Bearer",
+          expiresInSeconds: 900,
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse(200, {
+          status: "ok",
+        }),
+      );
+
+    const result = await requestCore<{ status: string }>({
+      path: "/admin/drivers/pending",
+    });
+
+    expect(result).toEqual({ status: "ok" });
+    expect(vi.mocked(fetch).mock.calls.length).toBe(3);
+
+    const refreshCall = vi.mocked(fetch).mock.calls[1] as [string, RequestInit];
+    expect(refreshCall[0]).toBe("http://localhost:3001/api/v1/admin/auth/refresh");
+    const refreshBody = JSON.parse(String(refreshCall[1].body));
+    expect(refreshBody).toEqual({ refreshToken: "refresh-1" });
   });
 
   it("returns undefined for 204 responses", async () => {

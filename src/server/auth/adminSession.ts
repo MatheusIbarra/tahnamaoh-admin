@@ -8,12 +8,14 @@ const SESSION_TTL_SECONDS = 60 * 60 * 8;
 
 export interface AdminSession {
   accessToken: string;
+  refreshToken?: string;
   email: string;
   createdAt: string;
 }
 
 interface AdminSessionClaims extends JWTPayload {
   accessToken: string;
+  refreshToken?: string;
   email: string;
   createdAt: string;
 }
@@ -29,6 +31,7 @@ function resolveSessionSecret(): Uint8Array {
 async function signSession(session: AdminSession): Promise<string> {
   const claims: AdminSessionClaims = {
     accessToken: session.accessToken,
+    ...(session.refreshToken ? { refreshToken: session.refreshToken } : {}),
     email: session.email,
     createdAt: session.createdAt,
   };
@@ -53,6 +56,7 @@ async function verifySession(token: string): Promise<AdminSession | null> {
 
     return {
       accessToken: payload.accessToken,
+      refreshToken: typeof payload.refreshToken === "string" ? payload.refreshToken : undefined,
       email: payload.email,
       createdAt: payload.createdAt,
     };

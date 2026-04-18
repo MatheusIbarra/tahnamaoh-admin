@@ -14,7 +14,7 @@ function resolveCoreApiBaseUrl(): string {
   return baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
 }
 
-async function loginInCore(email: string, password: string): Promise<{ accessToken: string }> {
+async function loginInCore(email: string, password: string): Promise<{ accessToken: string; refreshToken: string }> {
   const response = await fetch(`${resolveCoreApiBaseUrl()}/admin/auth/login`, {
     method: "POST",
     headers: {
@@ -28,9 +28,10 @@ async function loginInCore(email: string, password: string): Promise<{ accessTok
   const payload = (await response.json().catch(() => ({}))) as {
     message?: string;
     accessToken?: string;
+    refreshToken?: string;
   };
 
-  if (!response.ok || !payload.accessToken) {
+  if (!response.ok || !payload.accessToken || !payload.refreshToken) {
     throw new CoreApiError(
       payload.message ?? "Unable to login on core admin auth endpoint",
       response.status || 500,
@@ -38,7 +39,7 @@ async function loginInCore(email: string, password: string): Promise<{ accessTok
     );
   }
 
-  return { accessToken: payload.accessToken };
+  return { accessToken: payload.accessToken, refreshToken: payload.refreshToken };
 }
 
 function isMissingEnvError(error: unknown): boolean {
@@ -71,11 +72,12 @@ export async function loginAction(formData: FormData): Promise<void> {
   }
 
   try {
-    const { accessToken } = await loginInCore(email, password);
+    const { accessToken, refreshToken } = await loginInCore(email, password);
     const jwtPayload = decodeJwt(accessToken) as { sub?: string };
 
     await setAdminSession({
       accessToken,
+      refreshToken,
       email,
       createdAt: new Date().toISOString(),
     });
