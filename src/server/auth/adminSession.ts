@@ -1,12 +1,18 @@
 import "server-only";
 
-import { SignJWT, jwtVerify } from "jose";
+import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 import { cookies } from "next/headers";
 
 const SESSION_COOKIE_NAME = "tahnamao_admin_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 8;
 
 export interface AdminSession {
+  adminId: string;
+  email: string;
+  createdAt: string;
+}
+
+interface AdminSessionClaims extends JWTPayload {
   adminId: string;
   email: string;
   createdAt: string;
@@ -21,7 +27,13 @@ function resolveSessionSecret(): Uint8Array {
 }
 
 async function signSession(session: AdminSession): Promise<string> {
-  return new SignJWT(session)
+  const claims: AdminSessionClaims = {
+    adminId: session.adminId,
+    email: session.email,
+    createdAt: session.createdAt,
+  };
+
+  return new SignJWT(claims)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${SESSION_TTL_SECONDS}s`)
@@ -30,7 +42,7 @@ async function signSession(session: AdminSession): Promise<string> {
 
 async function verifySession(token: string): Promise<AdminSession | null> {
   try {
-    const { payload } = await jwtVerify(token, resolveSessionSecret());
+    const { payload } = await jwtVerify<AdminSessionClaims>(token, resolveSessionSecret());
     if (
       typeof payload.adminId !== "string" ||
       typeof payload.email !== "string" ||

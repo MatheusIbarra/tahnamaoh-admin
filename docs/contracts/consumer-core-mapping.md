@@ -24,11 +24,20 @@ Mapear cada funcionalidade administrativa para o contrato HTTP consumido do `tah
 
 ## Customers (pendente de reconciliacao)
 
-- Aguardando paths e schemas oficiais no OpenAPI em uso pelo time.
+- Acoes implementadas no admin por paths configuraveis em ambiente:
+  - `CORE_ADMIN_CUSTOMERS_LIST_PATH`
+  - `CORE_ADMIN_CUSTOMERS_BLOCK_PATH_TEMPLATE`
+  - `CORE_ADMIN_CUSTOMERS_UNBLOCK_PATH_TEMPLATE`
+- Enquanto os paths nao forem configurados, o painel retorna erro `501` orientando sincronizacao de contrato.
 
 ## Orders (pendente de reconciliacao)
 
-- Aguardando paths de listagem/detalhe/stream oficiais no OpenAPI em uso pelo time.
+- Acoes implementadas no admin por paths configuraveis em ambiente:
+  - `CORE_ADMIN_ORDERS_LIST_PATH`
+  - `CORE_ADMIN_ORDERS_DETAILS_PATH_TEMPLATE`
+  - `CORE_ADMIN_ORDERS_STREAM_PATH`
+- Stream SSE disponivel em `GET /api/orders/stream` no admin, repassando para o path configurado no core.
+- Enquanto os paths nao forem configurados, o painel retorna erro `501` orientando sincronizacao de contrato.
 
 ## Auth Admin (pendente de reconciliacao)
 

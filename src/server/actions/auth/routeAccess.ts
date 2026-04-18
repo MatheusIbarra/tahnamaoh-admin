@@ -1,13 +1,13 @@
+import "server-only";
+
 import { redirect } from "next/navigation";
 
 import { getAdminSession } from "@/server/auth/adminSession";
 
-export default async function HomePage() {
+export async function requireAdminSession() {
   const session = await getAdminSession();
-
-  if (session) {
-    redirect("/dashboard");
+  if (!session) {
+    redirect("/login");
   }
-
-  redirect("/login");
+  return session;
 }

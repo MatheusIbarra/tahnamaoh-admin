@@ -26,7 +26,7 @@ function resolveMetadataBase(): URL | undefined {
 const description = "Painel administrativo TáhNaMão";
 
 export const viewport: Viewport = {
-  themeColor: "#0f172a",
+  themeColor: "#FF5A36",
 };
 
 export const metadata: Metadata = {
@@ -37,6 +37,29 @@ export const metadata: Metadata = {
     template: "%s | TáhNaMão Admin",
   },
   description,
+  keywords: ["TáhNaMão", "admin", "painel", "gestão"],
+  authors: [{ name: "TáhNaMão" }],
+  creator: "TáhNaMão",
+  formatDetection: {
+    telephone: false,
+  },
+  appleWebApp: {
+    capable: true,
+    title: "TáhNaMão Admin",
+    statusBarStyle: "default",
+  },
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    siteName: "TáhNaMão Admin",
+    title: "TáhNaMão Admin",
+    description,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "TáhNaMão Admin",
+    description,
+  },
   robots: {
     index: false,
     follow: false,
@@ -50,7 +73,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className="h-full antialiased">
-      <body className="min-h-full bg-slate-50 text-slate-900">{children}</body>
+      <body className="min-h-full bg-background text-foreground">{children}</body>
     </html>
   );
 }
