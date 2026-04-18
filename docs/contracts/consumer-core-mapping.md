@@ -8,7 +8,7 @@ Mapear cada funcionalidade administrativa para o contrato HTTP consumido do `tah
 
 | Feature do painel | Metodo | Path core | Status esperado | Observacao |
 |---|---|---|---|---|
-| Listar pendentes | GET | `/admin/drivers/pending` | 200 | Query `page`, `pageSize` |
+| Listar motoristas | GET | `/admin/drivers` | 200 | Query `status`, `search`, `page`, `limit` |
 | Detalhe motorista | GET | `/admin/drivers/{driverId}` | 200 | Snapshot de revisao |
 | Aprovar motorista | POST (fallback PATCH) | `/admin/drivers/{driverId}/approve` | 200 | `reason` obrigatorio no dominio (`approval reason is required`) |
 | Rejeitar motorista | POST | `/admin/drivers/{driverId}/reject` | 200 | `reason` obrigatorio no dominio |

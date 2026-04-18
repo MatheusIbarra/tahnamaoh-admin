@@ -17,6 +17,8 @@ const DRIVER_STATUS_LABELS: Record<string, string> = {
   PENDING_REVIEW: "Pendente de revisão",
   PENDENTE_APROVACAO: "Pendente de revisão",
   APPROVED: "Aprovado",
+  DISPONIVEL: "Disponível",
+  EM_CORRIDA: "Em corrida",
   REJECTED: "Rejeitado",
   BLOCKED: "Bloqueado",
   BLOQUEADO: "Bloqueado",
@@ -100,7 +102,16 @@ function renderBadge(label: string, tone: BadgeTone) {
 export function DriverStatusBadge({ status }: StatusBadgeProps) {
   const normalized = normalizeStatus(status);
   const label = DRIVER_STATUS_LABELS[normalized] ?? humanizeStatus(status);
-  const tone = resolveGenericTone(normalized);
+  const tone =
+    normalized === "PENDENTE_APROVACAO"
+      ? "warning"
+      : normalized === "DISPONIVEL"
+        ? "success"
+        : normalized === "EM_CORRIDA"
+          ? "info"
+          : normalized === "BLOQUEADO"
+            ? "danger"
+            : resolveGenericTone(normalized);
   return renderBadge(label, tone);
 }
 

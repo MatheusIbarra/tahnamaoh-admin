@@ -18,6 +18,37 @@ export interface PendingDriversResponse {
   pageSize: number;
 }
 
+export type DriverListStatus =
+  | "PENDENTE_APROVACAO"
+  | "DISPONIVEL"
+  | "EM_CORRIDA"
+  | "BLOQUEADO";
+
+export interface DriverListItem {
+  id?: string;
+  _id?: string;
+  fullName?: string;
+  name?: string;
+  cpf?: string;
+  phone?: string;
+  status?: string;
+  createdAt?: string;
+}
+
+export interface DriversListResponse {
+  items: DriverListItem[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+interface GetDriversActionInput {
+  status?: DriverListStatus;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
 export interface DriverReviewSnapshot {
   driver: Record<string, unknown>;
   latestDocuments: Array<Record<string, unknown>>;
@@ -44,6 +75,20 @@ export async function listPendingDrivers(page = 1, pageSize = 20): Promise<Pendi
   return coreClient.get<PendingDriversResponse>("/admin/drivers/pending", {
     page,
     pageSize,
+  });
+}
+
+export async function getDriversAction({
+  status,
+  search,
+  page = 1,
+  limit = 20,
+}: GetDriversActionInput = {}): Promise<DriversListResponse> {
+  return coreClient.get<DriversListResponse>("/admin/drivers", {
+    status,
+    search,
+    page,
+    limit,
   });
 }
 

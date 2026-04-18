@@ -106,14 +106,15 @@ export async function approveDriverAction(formData: FormData): Promise<void> {
   if (!payload.reason) {
     redirectWithResult(driverId, "approve", "error", "approval reason is required");
   }
+  let result: "success" | "error" = "success";
+  let message = "Motorista aprovado com sucesso.";
   try {
     await executeDriverStatusAction(`/admin/drivers/${driverId}/approve`, payload);
-    redirectWithResult(driverId, "approve", "success", "Motorista aprovado com sucesso.");
   } catch (error) {
-    const message =
-      error instanceof CoreApiError ? error.message : "Falha ao aprovar motorista.";
-    redirectWithResult(driverId, "approve", "error", message);
+    result = "error";
+    message = error instanceof CoreApiError ? error.message : "Falha ao aprovar motorista.";
   }
+  redirectWithResult(driverId, "approve", result, message);
 }
 
 export async function blockDriverAction(formData: FormData): Promise<void> {
@@ -122,25 +123,27 @@ export async function blockDriverAction(formData: FormData): Promise<void> {
   if (!payload.reason) {
     redirectWithResult(driverId, "block", "error", "block reason is required");
   }
+  let result: "success" | "error" = "success";
+  let message = "Motorista bloqueado com sucesso.";
   try {
     await executeDriverStatusAction(`/admin/drivers/${driverId}/block`, payload);
-    redirectWithResult(driverId, "block", "success", "Motorista bloqueado com sucesso.");
   } catch (error) {
-    const message =
-      error instanceof CoreApiError ? error.message : "Falha ao bloquear motorista.";
-    redirectWithResult(driverId, "block", "error", message);
+    result = "error";
+    message = error instanceof CoreApiError ? error.message : "Falha ao bloquear motorista.";
   }
+  redirectWithResult(driverId, "block", result, message);
 }
 
 export async function unblockDriverAction(formData: FormData): Promise<void> {
   const driverId = resolveDriverId(formData);
   const payload = resolveDecisionPayload(formData);
+  let result: "success" | "error" = "success";
+  let message = "Motorista desbloqueado com sucesso.";
   try {
     await executeDriverStatusAction(`/admin/drivers/${driverId}/unblock`, payload);
-    redirectWithResult(driverId, "unblock", "success", "Motorista desbloqueado com sucesso.");
   } catch (error) {
-    const message =
-      error instanceof CoreApiError ? error.message : "Falha ao desbloquear motorista.";
-    redirectWithResult(driverId, "unblock", "error", message);
+    result = "error";
+    message = error instanceof CoreApiError ? error.message : "Falha ao desbloquear motorista.";
   }
+  redirectWithResult(driverId, "unblock", result, message);
 }

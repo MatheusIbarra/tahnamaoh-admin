@@ -2,11 +2,11 @@
 
 ## Responsabilidade
 
-Exibir e operar o fluxo administrativo de revisao de motoristas.
+Exibir listagem administrativa de motoristas (com filtros e paginacao server-side) e operar o fluxo de revisao.
 
 ## Entradas
 
-- Lista de pendentes do core.
+- Lista administrativa de motoristas via `GET /admin/drivers`.
 - Detalhe do motorista via `GET /admin/drivers/{driverId}`.
 - Historico de corridas retornado no payload de detalhe (paginacao local na UI).
 - Comandos administrativos:
@@ -16,6 +16,7 @@ Exibir e operar o fluxo administrativo de revisao de motoristas.
 
 ## Saidas
 
+- Tela `app/(app)/drivers/page.tsx` com filtros por status/busca, tabela de motoristas, badges de status e paginacao server-side.
 - Tela `app/(app)/drivers/[driverId]/page.tsx` com dados pessoais, CNH, veiculo e status.
 - Acao condicional por status (`PENDENTE_APROVACAO`, `BLOQUEADO`).
 - Modal de aprovacao com `reason` obrigatorio, `notes` opcional e checklist de revisao.
