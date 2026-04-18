@@ -13,6 +13,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     invalid_credentials: "Credenciais inválidas.",
     core_unavailable: "Não foi possível autenticar no core agora. Tente novamente em instantes.",
     session_invalid: "Sessão inválida recebida do core. Tente novamente.",
+    misconfigured:
+      "Configuração incompleta no servidor (variáveis de ambiente). Verifique CORE_API_BASE_URL e ADMIN_SESSION_SECRET no .env do admin.",
     unexpected: "Erro inesperado ao autenticar.",
   };
   const errorMessage = params.error ? errorMessageByCode[params.error] : undefined;

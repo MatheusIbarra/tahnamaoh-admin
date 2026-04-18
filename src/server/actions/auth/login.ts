@@ -41,6 +41,25 @@ async function loginInCore(email: string, password: string): Promise<{ accessTok
   return { accessToken: payload.accessToken };
 }
 
+function isMissingEnvError(error: unknown): boolean {
+  return error instanceof Error && error.message.startsWith("Missing required env");
+}
+
+function isNetworkError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  const code = "code" in error ? String((error as NodeJS.ErrnoException).code ?? "") : "";
+  const msg = error.message.toLowerCase();
+  return (
+    code === "ECONNREFUSED" ||
+    code === "ENOTFOUND" ||
+    code === "ETIMEDOUT" ||
+    code === "UND_ERR_CONNECT_TIMEOUT" ||
+    msg.includes("fetch failed")
+  );
+}
+
 export async function loginAction(formData: FormData): Promise<void> {
   const email = String(formData.get("email") ?? "")
     .trim()
@@ -69,6 +88,12 @@ export async function loginAction(formData: FormData): Promise<void> {
       if (error.status === 401 || error.status === 403) {
         redirect("/login?error=invalid_credentials");
       }
+      redirect("/login?error=core_unavailable");
+    }
+    if (isMissingEnvError(error)) {
+      redirect("/login?error=misconfigured");
+    }
+    if (isNetworkError(error)) {
       redirect("/login?error=core_unavailable");
     }
     redirect("/login?error=unexpected");
