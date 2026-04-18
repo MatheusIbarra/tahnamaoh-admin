@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { DriverStatusBadge, StatusBadge } from "@/components/ui/StatusBadge";
 import { listPendingDrivers } from "@/server/actions/admin/drivers";
 import { CoreApiError } from "@/server/core/coreErrors";
 
@@ -47,8 +48,12 @@ export default async function DriversPage() {
                 pending.items.map((driver) => (
                   <tr key={driver._id} className="border-t border-border">
                     <td className="px-4 py-3">{driver.fullName}</td>
-                    <td className="px-4 py-3">{driver.status}</td>
-                    <td className="px-4 py-3">{driver.onboardingStep ?? "-"}</td>
+                    <td className="px-4 py-3">
+                      <DriverStatusBadge status={driver.status} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={driver.onboardingStep} />
+                    </td>
                     <td className="px-4 py-3">
                       <Link
                         href={`/drivers/${driver._id}`}

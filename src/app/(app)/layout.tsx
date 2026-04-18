@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { BrandLogo } from "@/components/BrandLogo";
+import { NavLink } from "@/components/navigation/NavLink";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import { logoutAction } from "@/server/actions/auth/logout";
 import { requireAdminSession } from "@/server/actions/auth/routeAccess";
 
@@ -33,13 +35,7 @@ export default async function AppLayout({
           </Link>
           <nav className="space-y-1">
             {NAV_ITEMS.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="block rounded-md px-3 py-2 text-sm text-muted-foreground transition hover:bg-primary/10 hover:text-primary"
-              >
-                {item.label}
-              </Link>
+              <NavLink key={item.href} href={item.href} label={item.label} />
             ))}
           </nav>
 
@@ -47,12 +43,12 @@ export default async function AppLayout({
             <p className="text-xs text-muted-foreground">Sessão ativa</p>
             <p className="truncate text-sm font-medium text-foreground">{session.email}</p>
             <form action={logoutAction}>
-              <button
-                type="submit"
+              <SubmitButton
+                pendingLabel="Saindo..."
                 className="mt-3 w-full rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-muted"
               >
                 Sair
-              </button>
+              </SubmitButton>
             </form>
           </div>
         </aside>

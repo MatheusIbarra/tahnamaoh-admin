@@ -19,40 +19,47 @@ export function ActionToast({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const navigationRef = useRef({ pathname, router, searchParams });
+
+  useEffect(() => {
+    navigationRef.current = { pathname, router, searchParams };
+  }, [pathname, router, searchParams]);
+
   const toastKey = `${variant}:${message ?? ""}`;
   const [closingToastKey, setClosingToastKey] = useState<string | null>(null);
   const [dismissedToastKey, setDismissedToastKey] = useState<string | null>(null);
   const cleanedToastKeyRef = useRef<string | null>(null);
+
+  function stripToastParamsFromUrl(forKey: string) {
+    if (cleanedToastKeyRef.current === forKey) {
+      return;
+    }
+    const { pathname: path, router: nav, searchParams: sp } = navigationRef.current;
+    const nextParams = new URLSearchParams(sp.toString());
+    for (const key of TOAST_QUERY_KEYS) {
+      nextParams.delete(key);
+    }
+    const nextQuery = nextParams.toString();
+    const nextUrl = nextQuery ? `${path}?${nextQuery}` : path;
+    nav.replace(nextUrl, { scroll: false });
+    cleanedToastKeyRef.current = forKey;
+  }
 
   useEffect(() => {
     if (!message || dismissedToastKey === toastKey) {
       return;
     }
     const leaveTimer = window.setTimeout(() => setClosingToastKey(toastKey), durationMs);
-    const closeTimer = window.setTimeout(
-      () => setDismissedToastKey(toastKey),
-      durationMs + 180,
-    );
+    const closeTimer = window.setTimeout(() => {
+      stripToastParamsFromUrl(toastKey);
+      setDismissedToastKey(toastKey);
+    }, durationMs + 180);
 
     return () => {
       window.clearTimeout(leaveTimer);
       window.clearTimeout(closeTimer);
     };
-  }, [dismissedToastKey, durationMs, message, toastKey]);
-
-  useEffect(() => {
-    if (!message || cleanedToastKeyRef.current === toastKey) {
-      return;
-    }
-    const nextParams = new URLSearchParams(searchParams.toString());
-    for (const key of TOAST_QUERY_KEYS) {
-      nextParams.delete(key);
-    }
-    const nextQuery = nextParams.toString();
-    const nextUrl = nextQuery ? `${pathname}?${nextQuery}` : pathname;
-    router.replace(nextUrl, { scroll: false });
-    cleanedToastKeyRef.current = toastKey;
-  }, [message, pathname, router, searchParams, toastKey]);
+  }, [dismissedToastKey, durationMs, message, toastKey, variant]);
 
   const appearance = useMemo(() => {
     if (variant === "success") {
@@ -118,7 +125,10 @@ export function ActionToast({
             type="button"
             onClick={() => {
               setClosingToastKey(toastKey);
-              window.setTimeout(() => setDismissedToastKey(toastKey), 180);
+              window.setTimeout(() => {
+                stripToastParamsFromUrl(toastKey);
+                setDismissedToastKey(toastKey);
+              }, 180);
             }}
             className="rounded-md p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground"
             aria-label="Fechar notificacao"

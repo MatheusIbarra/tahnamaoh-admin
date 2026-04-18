@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { BrandLogo } from "@/components/BrandLogo";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import { loginAction } from "@/server/actions/auth/login";
 
 interface LoginPageProps {
@@ -63,12 +64,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             />
           </div>
 
-          <button
-            type="submit"
+          <SubmitButton
+            pendingLabel="Entrando..."
             className="w-full rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
           >
             Entrar
-          </button>
+          </SubmitButton>
         </form>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">Autenticação dedicada via core.</p>

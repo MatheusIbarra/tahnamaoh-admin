@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   approveDriverAction,
   blockDriverAction,
   unblockDriverAction,
 } from "@/server/actions/admin/driverDetails";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 interface DriverAdminActionsProps {
   driverId: string;
@@ -25,6 +26,58 @@ export function DriverAdminActions({ driverId, status }: DriverAdminActionsProps
   const pendingApproval = isPendingApproval(status);
   const blocked = isBlocked(status);
   const [modalMode, setModalMode] = useState<"approve" | "block" | null>(null);
+  const approveDialogRef = useRef<HTMLDivElement>(null);
+  const blockDialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!modalMode) {
+      return;
+    }
+
+    const dialog = modalMode === "approve" ? approveDialogRef.current : blockDialogRef.current;
+    if (!dialog) {
+      return;
+    }
+
+    const focusableSelector =
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    const focusableElements = Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector))
+      .filter((element) => !element.hasAttribute("disabled"));
+
+    focusableElements[0]?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setModalMode(null);
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const elements = Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector))
+        .filter((element) => !element.hasAttribute("disabled"));
+
+      if (elements.length === 0) {
+        return;
+      }
+
+      const firstElement = elements[0];
+      const lastElement = elements[elements.length - 1];
+
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [modalMode]);
 
   return (
     <>
@@ -52,23 +105,31 @@ export function DriverAdminActions({ driverId, status }: DriverAdminActionsProps
         {blocked ? (
           <form action={unblockDriverAction}>
             <input type="hidden" name="driverId" value={driverId} />
-            <button
-              type="submit"
+            <SubmitButton
+              pendingLabel="Desbloqueando..."
               className="rounded-md border border-secondary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-secondary/10"
             >
               Desbloquear
-            </button>
+            </SubmitButton>
           </form>
         ) : null}
       </div>
 
       {modalMode === "approve" ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setModalMode(null);
+            }
+          }}
+        >
           <div
+            ref={approveDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="approve-driver-title"
-            className="w-full max-w-xl rounded-xl border border-border bg-card p-5 shadow-lg"
+            className="w-full max-w-xl rounded-xl border border-border bg-card p-5 shadow-lg animate-in zoom-in-95 duration-200"
           >
             <h3 id="approve-driver-title" className="text-base font-semibold">
               Aprovar motorista
@@ -139,12 +200,12 @@ export function DriverAdminActions({ driverId, status }: DriverAdminActionsProps
                 >
                   Cancelar
                 </button>
-                <button
-                  type="submit"
+                <SubmitButton
+                  pendingLabel="Aprovando..."
                   className="rounded-md bg-success px-3 py-2 text-xs font-semibold text-success-foreground transition hover:opacity-90"
                 >
                   Confirmar aprovacao
-                </button>
+                </SubmitButton>
               </div>
             </form>
           </div>
@@ -152,12 +213,20 @@ export function DriverAdminActions({ driverId, status }: DriverAdminActionsProps
       ) : null}
 
       {modalMode === "block" ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setModalMode(null);
+            }
+          }}
+        >
           <div
+            ref={blockDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="block-driver-title"
-            className="w-full max-w-lg rounded-xl border border-border bg-card p-5 shadow-lg"
+            className="w-full max-w-lg rounded-xl border border-border bg-card p-5 shadow-lg animate-in zoom-in-95 duration-200"
           >
             <h3 id="block-driver-title" className="text-base font-semibold">
               Confirmar bloqueio
@@ -205,12 +274,12 @@ export function DriverAdminActions({ driverId, status }: DriverAdminActionsProps
                 >
                   Cancelar
                 </button>
-                <button
-                  type="submit"
+                <SubmitButton
+                  pendingLabel="Bloqueando..."
                   className="rounded-md bg-destructive px-3 py-2 text-xs font-semibold text-destructive-foreground transition hover:opacity-90"
                 >
                   Confirmar bloqueio
-                </button>
+                </SubmitButton>
               </div>
             </form>
           </div>

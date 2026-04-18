@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { ActionToast } from "@/components/admin/ActionToast";
 import { DriverAdminActions } from "@/components/admin/DriverAdminActions";
+import { DriverStatusBadge, StatusBadge } from "@/components/ui/StatusBadge";
 import {
   getDriverByIdAction,
   type DriverRaceHistoryItem,
@@ -13,8 +14,8 @@ interface DriverDetailPageProps {
   searchParams: Promise<{
     historyPage?: string;
     action?: string;
-    result?: string;
-    message?: string;
+    result?: string | string[];
+    message?: string | string[];
   }>;
 }
 
@@ -33,6 +34,14 @@ function asString(value: unknown): string | undefined {
 
 function asNumber(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function firstQueryValue(value: string | string[] | undefined): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  const raw = Array.isArray(value) ? value[0] : value;
+  return typeof raw === "string" && raw.length > 0 ? raw : undefined;
 }
 
 function extractRaceHistory(driver: Record<string, unknown>): DriverRaceHistoryItem[] {
@@ -101,8 +110,10 @@ export default async function DriverDetailPage({
   const startIndex = (safePage - 1) * HISTORY_PAGE_SIZE;
   const pagedHistory = raceHistory.slice(startIndex, startIndex + HISTORY_PAGE_SIZE);
 
-  const actionToastVariant = query.result === "success" ? "success" : "error";
-  const actionToastMessage = query.message;
+  const toastResult = firstQueryValue(query.result);
+  const toastMessage = firstQueryValue(query.message);
+  const actionToastVariant = toastResult === "success" ? "success" : "error";
+  const actionToastMessage = toastMessage;
 
   if (errorMessage) {
     return (
@@ -149,7 +160,9 @@ export default async function DriverDetailPage({
           </div>
           <div>
             <dt className="text-muted-foreground">Status atual</dt>
-            <dd className="font-semibold">{currentStatus}</dd>
+            <dd className="font-semibold">
+              <DriverStatusBadge status={currentStatus} />
+            </dd>
           </div>
         </dl>
       </article>
@@ -213,7 +226,9 @@ export default async function DriverDetailPage({
                     <td className="px-3 py-2">{ride.date ?? "-"}</td>
                     <td className="px-3 py-2">{ride.origin ?? "-"}</td>
                     <td className="px-3 py-2">{ride.destination ?? "-"}</td>
-                    <td className="px-3 py-2">{ride.status ?? "-"}</td>
+                    <td className="px-3 py-2">
+                      <StatusBadge status={ride.status} />
+                    </td>
                     <td className="px-3 py-2 text-right">
                       {typeof ride.totalValue === "number"
                         ? ride.totalValue.toFixed(2)

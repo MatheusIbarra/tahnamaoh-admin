@@ -1,3 +1,4 @@
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { listCustomers } from "@/server/actions/admin/customers";
 import { CoreApiError } from "@/server/core/coreErrors";
 
@@ -32,9 +33,40 @@ export default async function CustomersPage() {
           <p className="text-sm text-muted-foreground">
             Total de clientes retornados: {result?.total ?? 0}
           </p>
-          <pre className="mt-3 overflow-auto rounded-md bg-muted/60 p-3 text-xs">
-            {JSON.stringify(result?.items ?? [], null, 2)}
-          </pre>
+          <div className="mt-3 overflow-hidden rounded-lg border border-border">
+            <table className="w-full border-collapse text-sm">
+              <thead className="bg-muted/70">
+                <tr>
+                  <th className="px-3 py-2 text-left font-medium">Nome</th>
+                  <th className="px-3 py-2 text-left font-medium">E-mail</th>
+                  <th className="px-3 py-2 text-left font-medium">Telefone</th>
+                  <th className="px-3 py-2 text-left font-medium">Status</th>
+                  <th className="px-3 py-2 text-left font-medium">Criado em</th>
+                </tr>
+              </thead>
+              <tbody>
+                {result && result.items.length > 0 ? (
+                  result.items.map((customer) => (
+                    <tr key={customer.id} className="border-t border-border">
+                      <td className="px-3 py-2">{customer.fullName ?? "-"}</td>
+                      <td className="px-3 py-2">{customer.email ?? "-"}</td>
+                      <td className="px-3 py-2">{customer.phone ?? "-"}</td>
+                      <td className="px-3 py-2">
+                        <StatusBadge status={customer.status} />
+                      </td>
+                      <td className="px-3 py-2">{customer.createdAt ?? "-"}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="px-3 py-6 text-center text-muted-foreground">
+                      Nenhum cliente encontrado.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </article>
       )}
     </section>
