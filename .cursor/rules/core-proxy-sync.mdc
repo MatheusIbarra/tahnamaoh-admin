@@ -1,0 +1,15 @@
+---
+description: Keep admin proxy actions and docs synced with core contracts
+alwaysApply: true
+---
+
+# Core Proxy Sync Rule
+
+When any admin feature starts consuming, changing, or removing a core API call:
+
+1. Update `docs/contracts/consumer-core-mapping.md`.
+2. Ensure the method/path/status expectations match the current core OpenAPI/contract source.
+3. Update affected module docs in `docs/modules/*`.
+4. Update tests relevant to parsing, error handling, and authorization headers.
+
+Do not complete API proxy work while mapping documentation is outdated.

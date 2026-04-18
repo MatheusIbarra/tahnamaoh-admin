@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  reactStrictMode: true,
+  env: {
+    ENV: process.env.ENV ?? "local",
+  },
 };
 
 export default nextConfig;
