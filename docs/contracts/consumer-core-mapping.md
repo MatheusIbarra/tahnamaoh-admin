@@ -28,17 +28,17 @@ Mapear cada funcionalidade administrativa para o contrato HTTP consumido do `tah
 | Feature do painel | Metodo | Path core | Status esperado | Observacao |
 |---|---|---|---|---|
 | Listar clientes | GET | `/admin/clients` | 200 | Query `name`, `email`, `page`, `limit` |
-| Bloquear cliente | POST | `CORE_ADMIN_CUSTOMERS_BLOCK_PATH_TEMPLATE` | 200 | Path ainda configuravel por env |
-| Desbloquear cliente | POST | `CORE_ADMIN_CUSTOMERS_UNBLOCK_PATH_TEMPLATE` | 200 | Path ainda configuravel por env |
+| Detalhe do cliente | GET | `/admin/clients/{clientId}` | 200 | Snapshot para tela de detalhe administrativo |
+| Bloquear cliente | PATCH (fallback POST) | `/admin/clients/{clientId}/block` | 200 | Acao da tela de detalhe com feedback via query params |
+| Desbloquear cliente | PATCH (fallback POST) | `/admin/clients/{clientId}/unblock` | 200 | Botao visivel apenas para cliente bloqueado |
 
-## Orders (pendente de reconciliacao)
+## Orders
 
-- Acoes implementadas no admin por paths configuraveis em ambiente:
-  - `CORE_ADMIN_ORDERS_LIST_PATH`
-  - `CORE_ADMIN_ORDERS_DETAILS_PATH_TEMPLATE`
-  - `CORE_ADMIN_ORDERS_STREAM_PATH`
-- Stream SSE disponivel em `GET /api/orders/stream` no admin, repassando para o path configurado no core.
-- Enquanto os paths nao forem configurados, o painel retorna erro `501` orientando sincronizacao de contrato.
+| Feature do painel | Metodo | Path core | Status esperado | Observacao |
+|---|---|---|---|---|
+| Listar pedidos | GET | `/admin/orders` | 200 | Query `status`, `startDate`, `endDate`, `customer`, `driver`, `page`, `limit` |
+| Detalhe do pedido | GET | `/admin/orders/{orderId}` | 200 | Link direto da listagem para página de detalhe |
+| Stream de pedidos | GET | `CORE_ADMIN_ORDERS_STREAM_PATH` | 200 | Proxy SSE em `GET /api/orders/stream` no admin |
 
 ## Auth Admin
 
